@@ -11,19 +11,44 @@ from __future__ import annotations
 from pathlib import Path
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches, Pt
+from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Inches, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "screenshots"
 OUT = ROOT / "report" / "Mukesh_Pant_Cloud_Computing_Lab_Report.docx"
 
+# ---------------------------------------------------------------------------
+# Visual design tokens
+# ---------------------------------------------------------------------------
+
+COLOR_PRIMARY = RGBColor(0x1F, 0x38, 0x64)   # deep academic blue (Heading 1)
+COLOR_SECONDARY = RGBColor(0x2E, 0x74, 0xB5) # mid blue (Heading 3, accents)
+COLOR_GREY = RGBColor(0x59, 0x59, 0x59)      # captions, sub-text
+COLOR_RULE = RGBColor(0xBF, 0xBF, 0xBF)      # horizontal rule under lab titles
+
+FONT_BODY = "Calibri"
+FONT_HEADING = "Calibri"
+
+SIZE_BODY = 12
+SIZE_LAB_TITLE = 22
+SIZE_H1 = 14
+SIZE_H3 = 12
+SIZE_CAPTION = 10
+SIZE_TOC_ENTRY = 12
+SIZE_COVER_TITLE = 30
+SIZE_COVER_BIG = 22
+SIZE_COVER_NAME = 18
+
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Low-level helpers (XML / styling)
 # ---------------------------------------------------------------------------
 
-def _set_run(run, *, bold=False, italic=False, size=None, color=None):
+def _set_run(run, *, bold=False, italic=False, size=None, color=None, font_name=None):
     if bold:
         run.bold = True
     if italic:
@@ -32,100 +57,323 @@ def _set_run(run, *, bold=False, italic=False, size=None, color=None):
         run.font.size = Pt(size)
     if color is not None:
         run.font.color.rgb = color
+    if font_name is not None:
+        run.font.name = font_name
 
 
-def add_centered(doc, text, *, bold=False, size=None, blank_after=0):
+def _para_spacing(p, *, space_before=0, space_after=4, line=1.15, keep_with_next=False, keep_together=False, page_break_before=False):
+    pf = p.paragraph_format
+    pf.space_before = Pt(space_before)
+    pf.space_after = Pt(space_after)
+    pf.line_spacing = line
+    pf.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+    pf.widow_control = True
+    if keep_with_next:
+        pf.keep_with_next = True
+    if keep_together:
+        pf.keep_together = True
+    if page_break_before:
+        pf.page_break_before = True
+
+
+def _add_horizontal_rule(paragraph, color=COLOR_RULE, size=8):
+    """Add a bottom border to a paragraph as a horizontal rule under it."""
+    p_pr = paragraph._p.get_or_add_pPr()
+    p_bdr = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), str(size))
+    bottom.set(qn("w:space"), "1")
+    bottom.set(qn("w:color"), "{:02X}{:02X}{:02X}".format(*color))
+    p_bdr.append(bottom)
+    p_pr.append(p_bdr)
+
+
+def _add_page_field(run):
+    """Insert {PAGE} field into a run for live page numbers."""
+    fld_begin = OxmlElement("w:fldChar")
+    fld_begin.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = "PAGE"
+    fld_end = OxmlElement("w:fldChar")
+    fld_end.set(qn("w:fldCharType"), "end")
+    run._r.append(fld_begin)
+    run._r.append(instr)
+    run._r.append(fld_end)
+
+
+# ---------------------------------------------------------------------------
+# Section / page setup
+# ---------------------------------------------------------------------------
+
+def configure_sections(doc):
+    """Set Moderate margins and configure header/footer with page numbers."""
+    section = doc.sections[0]
+    # Word "Moderate": 1" top/bottom, 0.75" left/right
+    section.top_margin = Inches(1.0)
+    section.bottom_margin = Inches(1.0)
+    section.left_margin = Inches(0.85)
+    section.right_margin = Inches(0.85)
+    section.header_distance = Inches(0.5)
+    section.footer_distance = Inches(0.5)
+
+    # different-first-page so cover page has no header/footer
+    section.different_first_page_header_footer = True
+
+    # Header (skipped on first page)
+    header = section.header
+    h_para = header.paragraphs[0]
+    h_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    hr = h_para.add_run("Cloud Computing Lab Report  |  Mukesh Pant  |  Roll No. 29")
+    _set_run(hr, italic=True, size=10, color=COLOR_GREY)
+    _add_horizontal_rule(h_para, color=COLOR_RULE, size=4)
+
+    # Footer (skipped on first page)
+    footer = section.footer
+    f_para = footer.paragraphs[0]
+    f_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    label = f_para.add_run("Page ")
+    _set_run(label, size=10, color=COLOR_GREY)
+    page_run = f_para.add_run()
+    _set_run(page_run, size=10, color=COLOR_GREY)
+    _add_page_field(page_run)
+
+
+def configure_default_styles(doc):
+    style = doc.styles["Normal"]
+    style.font.name = FONT_BODY
+    style.font.size = Pt(SIZE_BODY)
+    style.paragraph_format.space_after = Pt(6)
+    style.paragraph_format.line_spacing = 1.25
+
+
+# ---------------------------------------------------------------------------
+# Cover page
+# ---------------------------------------------------------------------------
+
+def _cover_centered(doc, text, *, bold=False, italic=False, size=None, color=None,
+                    space_before=0, space_after=6):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _para_spacing(p, space_before=space_before, space_after=space_after, line=1.2)
     r = p.add_run(text)
-    _set_run(r, bold=bold, size=size)
-    for _ in range(blank_after):
-        doc.add_paragraph()
+    _set_run(r, bold=bold, italic=italic, size=size, color=color)
     return p
 
 
 def add_cover_page(doc):
-    add_centered(doc, "Far Western University", bold=True, size=28)
-    add_centered(doc, "Faculty of Engineering", bold=True, size=18)
-    add_centered(doc, "School of Engineering", size=14, blank_after=4)
+    # Top spacer
+    for _ in range(2):
+        doc.add_paragraph()
 
-    add_centered(doc, "A LAB REPORT", bold=True, size=14)
-    add_centered(doc, "ON", size=12)
-    add_centered(doc, "CLOUD COMPUTING (PRACTICAL)", bold=True, size=18, blank_after=4)
+    _cover_centered(doc, "FAR WESTERN UNIVERSITY",
+                    bold=True, size=SIZE_COVER_TITLE, color=COLOR_PRIMARY,
+                    space_after=8)
+    _cover_centered(doc, "Faculty of Engineering", bold=True, size=18, color=COLOR_SECONDARY)
+    p_school = _cover_centered(doc, "School of Engineering", italic=True, size=14, color=COLOR_GREY)
+    _add_horizontal_rule(p_school, color=COLOR_PRIMARY, size=12)
 
-    add_centered(doc, "Submitted by:")
-    add_centered(doc, "Mukesh Pant", bold=True, size=16)
-    add_centered(doc, "Roll No. 29", bold=True, size=14)
-    add_centered(doc, "VIII Semester, B.E. Computer Engineering", size=12, blank_after=2)
+    for _ in range(3):
+        doc.add_paragraph()
 
-    add_centered(doc, "Submitted to:")
-    add_centered(doc, "Er. Robinson Pujara", bold=True, size=14)
-    add_centered(doc, "Lecturer, SOE, FWU", size=12, blank_after=4)
+    _cover_centered(doc, "A LAB REPORT", italic=True, size=14, color=COLOR_GREY,
+                    space_after=4)
+    _cover_centered(doc, "ON", italic=True, size=12, color=COLOR_GREY,
+                    space_after=4)
+    p_title = _cover_centered(doc, "CLOUD COMPUTING", bold=True,
+                              size=SIZE_COVER_BIG, color=COLOR_PRIMARY,
+                              space_after=2)
+    _cover_centered(doc, "(Practical)", italic=True, size=14, color=COLOR_SECONDARY,
+                    space_after=4)
+    _add_horizontal_rule(p_title, color=COLOR_PRIMARY, size=8)
 
-    add_centered(doc, "Signature: ____________________", size=12)
+    for _ in range(3):
+        doc.add_paragraph()
+
+    # Submitted by block
+    _cover_centered(doc, "Submitted by:", italic=True, size=12, color=COLOR_GREY,
+                    space_after=4)
+    _cover_centered(doc, "Mukesh Pant", bold=True, size=SIZE_COVER_NAME,
+                    color=COLOR_PRIMARY, space_after=2)
+    _cover_centered(doc, "Roll No. 29", bold=True, size=14, color=COLOR_SECONDARY,
+                    space_after=2)
+    _cover_centered(doc, "VIII Semester  |  B.E. Computer Engineering",
+                    size=12, color=COLOR_GREY, space_after=4)
+
+    for _ in range(2):
+        doc.add_paragraph()
+
+    # Submitted to block
+    _cover_centered(doc, "Submitted to:", italic=True, size=12, color=COLOR_GREY,
+                    space_after=4)
+    _cover_centered(doc, "Er. Robinson Pujara", bold=True, size=14,
+                    color=COLOR_PRIMARY, space_after=2)
+    _cover_centered(doc, "Lecturer, School of Engineering, FWU",
+                    size=12, color=COLOR_GREY, space_after=4)
+
+    for _ in range(3):
+        doc.add_paragraph()
+
+    _cover_centered(doc, "Signature:  ____________________",
+                    size=12, color=COLOR_GREY, space_after=2)
+
     doc.add_page_break()
 
+
+# ---------------------------------------------------------------------------
+# Table of contents
+# ---------------------------------------------------------------------------
 
 def add_toc(doc, labs):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _para_spacing(p, space_before=4, space_after=8, keep_with_next=True)
     r = p.add_run("TABLE OF CONTENTS")
-    _set_run(r, bold=True, size=18)
+    _set_run(r, bold=True, size=20, color=COLOR_PRIMARY)
+    _add_horizontal_rule(p, color=COLOR_PRIMARY, size=8)
     doc.add_paragraph()
+
     for i, lab in enumerate(labs, 1):
         para = doc.add_paragraph()
-        run = para.add_run(f"Lab {i}: {lab['title']}")
-        _set_run(run, size=12)
-    doc.add_page_break()
+        _para_spacing(para, space_before=2, space_after=4, line=1.2)
+        run_n = para.add_run(f"Lab {i}.   ")
+        _set_run(run_n, bold=True, size=SIZE_TOC_ENTRY, color=COLOR_PRIMARY)
+        run_t = para.add_run(lab["title"])
+        _set_run(run_t, size=SIZE_TOC_ENTRY, color=COLOR_GREY)
 
 
-def add_screenshot(doc, image_path, caption):
+# ---------------------------------------------------------------------------
+# Per-lab elements
+# ---------------------------------------------------------------------------
+
+def _add_h1(doc, text, *, keep_with_next=True):
+    p = doc.add_paragraph()
+    _para_spacing(p, space_before=10, space_after=4, line=1.2,
+                  keep_with_next=keep_with_next)
+    r = p.add_run(text)
+    _set_run(r, bold=True, size=SIZE_H1, color=COLOR_PRIMARY)
+    return p
+
+
+def _add_h3(doc, text, *, keep_with_next=True):
+    p = doc.add_paragraph()
+    _para_spacing(p, space_before=6, space_after=2, line=1.2,
+                  keep_with_next=keep_with_next)
+    r = p.add_run(text)
+    _set_run(r, bold=True, size=SIZE_H3, color=COLOR_SECONDARY)
+    return p
+
+
+def _add_body(doc, text, *, justify=True, keep_together=False):
+    p = doc.add_paragraph()
+    if justify:
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    _para_spacing(p, space_before=0, space_after=6, line=1.3,
+                  keep_together=keep_together)
+    r = p.add_run(text)
+    _set_run(r, size=SIZE_BODY)
+    return p
+
+
+def _add_bullet(doc, text):
+    p = doc.add_paragraph(style="List Bullet")
+    _para_spacing(p, space_before=0, space_after=2, line=1.2)
+    if p.runs:
+        for r in p.runs:
+            _set_run(r, size=SIZE_BODY)
+    # add the text as a run if style didn't already
+    if not p.text.strip():
+        r = p.add_run(text)
+        _set_run(r, size=SIZE_BODY)
+    else:
+        # the style sometimes inserts placeholder; rewrite
+        for r in p.runs:
+            r.text = ""
+        r = p.add_run(text)
+        _set_run(r, size=SIZE_BODY)
+
+
+def _add_services_table(doc, services):
+    # Two-column compact table for AWS Services Used.
+    n = len(services)
+    rows = (n + 1) // 2
+    table = doc.add_table(rows=rows, cols=2)
+    table.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.autofit = False
+    for col in table.columns:
+        col.width = Inches(3.2)
+
+    for idx, svc in enumerate(services):
+        r, c = divmod(idx, 2)
+        cell = table.cell(r, c)
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        cell.text = ""
+        para = cell.paragraphs[0]
+        _para_spacing(para, space_before=2, space_after=2, line=1.15)
+        run_b = para.add_run("•  ")
+        _set_run(run_b, bold=True, size=SIZE_BODY, color=COLOR_SECONDARY)
+        run_t = para.add_run(svc)
+        _set_run(run_t, size=SIZE_BODY)
+    # ensure layout has bottom spacer
+    after = doc.add_paragraph()
+    _para_spacing(after, space_before=0, space_after=4, line=1.0)
+
+
+def _add_screenshot(doc, image_path, caption):
     if not Path(image_path).exists():
         warn = doc.add_paragraph()
         wr = warn.add_run(f"[MISSING SCREENSHOT: {image_path}]")
-        _set_run(wr, italic=True)
+        _set_run(wr, italic=True, color=RGBColor(0xCC, 0x00, 0x00))
         return
 
     pic_para = doc.add_paragraph()
     pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _para_spacing(pic_para, space_before=4, space_after=2, line=1.0,
+                  keep_with_next=True, keep_together=True)
     run = pic_para.add_run()
-    run.add_picture(str(image_path), width=Inches(5.8))
+    run.add_picture(str(image_path), width=Inches(5.6))
 
     cap = doc.add_paragraph()
     cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _para_spacing(cap, space_before=0, space_after=8, line=1.15,
+                  keep_together=True)
     cr = cap.add_run(caption)
-    _set_run(cr, italic=True, size=10)
-    doc.add_paragraph()  # spacing
+    _set_run(cr, italic=True, size=SIZE_CAPTION, color=COLOR_GREY)
 
 
-def add_lab(doc, n, lab):
+def add_lab(doc, n, lab, *, is_first=False):
     title_p = doc.add_paragraph()
+    _para_spacing(title_p, space_before=0, space_after=8, line=1.2,
+                  keep_with_next=True,
+                  page_break_before=not is_first)
     tr = title_p.add_run(f"Lab {n}: {lab['title']}")
-    _set_run(tr, bold=True, size=18)
+    _set_run(tr, bold=True, size=SIZE_LAB_TITLE, color=COLOR_PRIMARY)
+    _add_horizontal_rule(title_p, color=COLOR_PRIMARY, size=12)
 
-    doc.add_paragraph()
+    # Objective
+    _add_h1(doc, "Objective")
+    _add_body(doc, lab["objective"])
 
-    doc.add_paragraph("Objective", style="Heading 1")
-    doc.add_paragraph(lab["objective"])
+    # Services as 2-column table
+    _add_h1(doc, "AWS Services Used")
+    _add_services_table(doc, lab["services"])
 
-    doc.add_paragraph("AWS Services Used", style="Heading 1")
-    for s in lab["services"]:
-        doc.add_paragraph(s, style="List Bullet")
-
-    doc.add_paragraph("Step-by-Step Procedure", style="Heading 1")
+    # Procedure
+    _add_h1(doc, "Step-by-Step Procedure")
     for step_title, lines in lab["procedure"]:
-        doc.add_paragraph(step_title, style="Heading 3")
+        _add_h3(doc, step_title)
         for line in lines:
-            doc.add_paragraph(line, style="List Bullet")
+            _add_bullet(doc, line)
 
-    doc.add_paragraph("Screenshots", style="Heading 1")
+    # Screenshots
+    _add_h1(doc, "Screenshots")
     for path, caption in lab["screenshots"]:
-        add_screenshot(doc, SHOTS / path, caption)
+        _add_screenshot(doc, SHOTS / path, caption)
 
-    doc.add_paragraph("Observations & Results", style="Heading 1")
-    doc.add_paragraph(lab["observations"])
-
-    doc.add_page_break()
+    # Observations
+    _add_h1(doc, "Observations & Results")
+    _add_body(doc, lab["observations"])
 
 
 # ---------------------------------------------------------------------------
@@ -169,9 +417,9 @@ LAB_1 = {
     ],
     "screenshots": [
         ("lab-01/1.1-vpc-list.png",
-         "Figure 1.1 - VPC vpc-mukesh listed in the Mumbai region with State = Available."),
+         "Figure 1.1 — VPC vpc-mukesh listed in the Mumbai region with State = Available."),
         ("lab-01/1.2-vpc-details.png",
-         "Figure 1.2 - Details panel showing CIDR 10.20.0.0/16 and DNS settings enabled."),
+         "Figure 1.2 — Details panel showing CIDR 10.20.0.0/16 and DNS settings enabled."),
     ],
     "observations": (
         "The VPC vpc-mukesh was created successfully in the ap-south-1 region with "
@@ -228,11 +476,11 @@ LAB_2 = {
     ],
     "screenshots": [
         ("lab-02/2.1-ec2-running.png",
-         "Figure 2.1 - EC2 instance ec2-mukesh in the Running state with status checks passed."),
+         "Figure 2.1 — EC2 instance ec2-mukesh in the Running state with status checks passed."),
         ("lab-02/2.2-ec2-details.png",
-         "Figure 2.2 - Instance details: t2.micro, Amazon Linux 2023, attached security group mukesh-ec2-sg."),
+         "Figure 2.2 — Instance details: t2.micro, Amazon Linux 2023, attached security group mukesh-ec2-sg."),
         ("lab-02/2.3-browser-welcome.png",
-         "Figure 2.3 - Browser at the public IP showing the custom welcome page served by Apache."),
+         "Figure 2.3 — Browser at the public IP showing the custom welcome page served by Apache."),
     ],
     "observations": (
         "The EC2 instance ec2-mukesh booted successfully in the ap-south-1 region. "
@@ -289,11 +537,11 @@ LAB_3 = {
     ],
     "screenshots": [
         ("lab-03/3.1-bucket-overview.png",
-         "Figure 3.1 - S3 bucket created in the Mumbai region with the unique mukesh-static name."),
+         "Figure 3.1 — S3 bucket created in the Mumbai region with the unique mukesh-static name."),
         ("lab-03/3.2-static-hosting.png",
-         "Figure 3.2 - Static website hosting enabled in bucket properties with the website endpoint."),
+         "Figure 3.2 — Static website hosting enabled in bucket properties with the website endpoint."),
         ("lab-03/3.3-browser-site.png",
-         "Figure 3.3 - The static website rendered in a browser via the S3 website endpoint."),
+         "Figure 3.3 — The static website rendered in a browser via the S3 website endpoint."),
     ],
     "observations": (
         "The S3 bucket was created with a globally unique name and configured to "
@@ -306,7 +554,7 @@ LAB_3 = {
 }
 
 LAB_4 = {
-    "title": "Virtual Networking - Subnets, Routing, and Security Groups",
+    "title": "Virtual Networking — Subnets, Routing, and Security Groups",
     "objective": (
         "Build a custom VPC with one public subnet and one private subnet across "
         "two availability zones, attach an internet gateway, configure route "
@@ -353,17 +601,17 @@ LAB_4 = {
     ],
     "screenshots": [
         ("lab-04/4.1-vpc-overview.png",
-         "Figure 4.1 - Custom VPC vpc-mukesh-net details with CIDR 10.30.0.0/16."),
+         "Figure 4.1 — Custom VPC vpc-mukesh-net details with CIDR 10.30.0.0/16."),
         ("lab-04/4.2-subnets.png",
-         "Figure 4.2 - Public and private subnets in two availability zones."),
+         "Figure 4.2 — Public and private subnets in two availability zones."),
         ("lab-04/4.3-route-table-public.png",
-         "Figure 4.3 - Public route table with the 0.0.0.0/0 route pointing to the internet gateway."),
+         "Figure 4.3 — Public route table with the 0.0.0.0/0 route pointing to the internet gateway."),
         ("lab-04/4.4-igw-attached.png",
-         "Figure 4.4 - Internet gateway igw-mukesh attached to vpc-mukesh-net."),
+         "Figure 4.4 — Internet gateway igw-mukesh attached to vpc-mukesh-net."),
         ("lab-04/4.5-sg-web-rules.png",
-         "Figure 4.5 - mukesh-web-sg inbound rules allowing HTTP and HTTPS from anywhere."),
+         "Figure 4.5 — mukesh-web-sg inbound rules allowing HTTP and HTTPS from anywhere."),
         ("lab-04/4.6-sg-db-rules.png",
-         "Figure 4.6 - mukesh-db-sg allowing MySQL only from the mukesh-web-sg source."),
+         "Figure 4.6 — mukesh-db-sg allowing MySQL only from the mukesh-web-sg source."),
     ],
     "observations": (
         "A custom multi-tier VPC was successfully built. The public subnet is "
@@ -429,15 +677,15 @@ LAB_5 = {
     ],
     "screenshots": [
         ("lab-05/5.1-alb-overview.png",
-         "Figure 5.1 - Application Load Balancer alb-mukesh with internet-facing scheme and DNS name."),
+         "Figure 5.1 — Application Load Balancer alb-mukesh with internet-facing scheme and DNS name."),
         ("lab-05/5.2-asg-instances.png",
-         "Figure 5.2 - Auto Scaling Group asg-mukesh with two InService instances."),
+         "Figure 5.2 — Auto Scaling Group asg-mukesh with two InService instances."),
         ("lab-05/5.3-target-group-health.png",
-         "Figure 5.3 - Target group tg-mukesh showing both targets healthy."),
+         "Figure 5.3 — Target group tg-mukesh showing both targets healthy."),
         ("lab-05/5.4-browser-alb-1.png",
-         "Figure 5.4 - First request via the ALB DNS, served by the first ASG instance."),
+         "Figure 5.4 — First request via the ALB DNS, served by the first ASG instance."),
         ("lab-05/5.5-browser-alb-2.png",
-         "Figure 5.5 - After a refresh, the request is served by the second ASG instance, confirming load balancing."),
+         "Figure 5.5 — After a refresh, the request is served by the second ASG instance, confirming load balancing."),
     ],
     "observations": (
         "The ALB and ASG combination worked as expected. Both instances launched "
@@ -496,13 +744,13 @@ LAB_6 = {
     ],
     "screenshots": [
         ("lab-06/6.1-iam-users-list.png",
-         "Figure 6.1 - IAM Users page showing both mukesh-dev and mukesh-readonly."),
+         "Figure 6.1 — IAM Users page showing both mukesh-dev and mukesh-readonly."),
         ("lab-06/6.2-iam-group-developers.png",
-         "Figure 6.2 - The Developers-mukesh group with AmazonEC2FullAccess attached."),
+         "Figure 6.2 — The Developers-mukesh group with AmazonEC2FullAccess attached."),
         ("lab-06/6.3-iam-user-readonly-policies.png",
-         "Figure 6.3 - mukesh-readonly user with the ReadOnlyAccess policy attached directly."),
+         "Figure 6.3 — mukesh-readonly user with the ReadOnlyAccess policy attached directly."),
         ("lab-06/6.4-iam-login-as-dev.png",
-         "Figure 6.4 - Successful sign-in as mukesh-dev confirmed by the top-right banner."),
+         "Figure 6.4 — Successful sign-in as mukesh-dev confirmed by the top-right banner."),
     ],
     "observations": (
         "Two IAM users with different access patterns were created. mukesh-dev "
@@ -578,15 +826,15 @@ LAB_7 = {
     ],
     "screenshots": [
         ("lab-07/7.1-lambda-function.png",
-         "Figure 7.1 - Lambda function lambda-mukesh-visitor-logger with Python 3.12 runtime."),
+         "Figure 7.1 — Lambda function lambda-mukesh-visitor-logger with Python 3.12 runtime."),
         ("lab-07/7.2-lambda-test-success.png",
-         "Figure 7.2 - Lambda Test tab showing a successful invocation with the response body."),
+         "Figure 7.2 — Lambda Test tab showing a successful invocation with the response body."),
         ("lab-07/7.3-dynamodb-items.png",
-         "Figure 7.3 - DynamoDB visitors-mukesh table with three items written by the Lambda."),
+         "Figure 7.3 — DynamoDB visitors-mukesh table with three items written by the Lambda."),
         ("lab-07/7.4-fargate-task-running.png",
-         "Figure 7.4 - Fargate task in the RUNNING state on the fargate-mukesh-cluster."),
+         "Figure 7.4 — Fargate task in the RUNNING state on the fargate-mukesh-cluster."),
         ("lab-07/7.5-fargate-task-logs.png",
-         "Figure 7.5 - CloudWatch logs from the Fargate task showing Nginx startup messages."),
+         "Figure 7.5 — CloudWatch logs from the Fargate task showing Nginx startup messages."),
     ],
     "observations": (
         "All three serverless services worked end to end. The Lambda function, "
@@ -650,11 +898,11 @@ LAB_8 = {
     ],
     "screenshots": [
         ("lab-08/8.1-sns-topic.png",
-         "Figure 8.1 - SNS topic sns-mukesh-notifications with two confirmed subscriptions."),
+         "Figure 8.1 — SNS topic sns-mukesh-notifications with two confirmed subscriptions."),
         ("lab-08/8.2-email-received.png",
-         "Figure 8.2 - The published message delivered to the email subscriber."),
+         "Figure 8.2 — The published message delivered to the email subscriber."),
         ("lab-08/8.3-sqs-poll-result.png",
-         "Figure 8.3 - The SQS queue receiving the same message wrapped in an SNS envelope."),
+         "Figure 8.3 — The SQS queue receiving the same message wrapped in an SNS envelope."),
     ],
     "observations": (
         "The pub/sub fan-out pattern worked exactly as expected. A single Publish "
@@ -719,13 +967,13 @@ LAB_9 = {
     ],
     "screenshots": [
         ("lab-09/9.1-stack-list.png",
-         "Figure 9.1 - CloudFormation stack stack-mukesh in CREATE_COMPLETE state."),
+         "Figure 9.1 — CloudFormation stack stack-mukesh in CREATE_COMPLETE state."),
         ("lab-09/9.2-stack-events.png",
-         "Figure 9.2 - Stack events showing CREATE_IN_PROGRESS to CREATE_COMPLETE for each resource."),
+         "Figure 9.2 — Stack events showing CREATE_IN_PROGRESS to CREATE_COMPLETE for each resource."),
         ("lab-09/9.3-stack-resources.png",
-         "Figure 9.3 - Stack resources panel: logical IDs mapped to physical resource IDs."),
+         "Figure 9.3 — Stack resources panel: logical IDs mapped to physical resource IDs."),
         ("lab-09/9.4-stack-outputs.png",
-         "Figure 9.4 - Stack outputs: VpcId, VpcCidrOutput, BucketName and BucketArn."),
+         "Figure 9.4 — Stack outputs: VpcId, VpcCidrOutput, BucketName and BucketArn."),
     ],
     "observations": (
         "CloudFormation deployed the entire stack from a single YAML file. The "
@@ -751,14 +999,14 @@ LABS = [LAB_1, LAB_2, LAB_3, LAB_4, LAB_5, LAB_6, LAB_7, LAB_8, LAB_9]
 def build():
     doc = Document()
 
-    style = doc.styles["Normal"]
-    style.font.name = "Calibri"
-    style.font.size = Pt(11)
+    configure_default_styles(doc)
+    configure_sections(doc)
 
     add_cover_page(doc)
     add_toc(doc, LABS)
+
     for i, lab in enumerate(LABS, 1):
-        add_lab(doc, i, lab)
+        add_lab(doc, i, lab, is_first=(i == 1))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
