@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  FWU Lab 9 - Mukesh Pant - Infrastructure as Code via AWS CloudFormation.
+  Provisions a small representative stack (VPC + S3 bucket) to demonstrate
+  declarative infrastructure provisioning with a YAML template.
+
+Parameters:
+  OwnerName:
+    Type: String
+    Default: Mukesh
+    Description: Owner tag value applied to all resources
+
+  VpcCidr:
+    Type: String
+    Default: 10.50.0.0/16
+    Description: CIDR block for the CloudFormation-managed VPC
+
+Resources:
+  CfnVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: vpc-mukesh-cfn
+        - Key: Owner
+          Value: !Ref OwnerName
+        - Key: Project
+          Value: FWU-CloudComputing-Lab
+        - Key: Lab
+          Value: lab-09-cloudformation
+
+  CfnBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "mukesh-cfn-${AWS::AccountId}"
+      Tags:
+        - Key: Name
+          Value: mukesh-cfn-bucket
+        - Key: Owner
+          Value: !Ref OwnerName
+        - Key: Project
+          Value: FWU-CloudComputing-Lab
+        - Key: Lab
+          Value: lab-09-cloudformation
+
+Outputs:
+  VpcId:
+    Value: !Ref CfnVpc
+    Description: ID of the VPC created by CloudFormation
+
+  VpcCidrOutput:
+    Value: !GetAtt CfnVpc.CidrBlock
+    Description: CIDR block of the VPC
+
+  BucketName:
+    Value: !Ref CfnBucket
+    Description: Name of the S3 bucket created by CloudFormation
+
+  BucketArn:
+    Value: !GetAtt CfnBucket.Arn
+    Description: ARN of the S3 bucket
