@@ -1,0 +1,165 @@
+# ============================================================================
+# DynamoDB table - "visitors-mukesh"
+# ============================================================================
+
+resource "aws_dynamodb_table" "visitors" {
+  name         = "visitors-mukesh"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  tags = {
+    Name = "visitors-mukesh"
+  }
+}
+
+# ============================================================================
+# Lambda function - lambda-mukesh-visitor-logger
+# ============================================================================
+
+data "aws_iam_policy_document" "lambda_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "lambda" {
+  name               = "role-mukesh-lambda"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "lambda_ddb" {
+  name = "ddb-write-mukesh"
+  role = aws_iam_role.lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem"]
+        Resource = aws_dynamodb_table.visitors.arn
+      }
+    ]
+  })
+}
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/handler.py"
+  output_path = "${path.module}/lambda/handler.zip"
+}
+
+resource "aws_lambda_function" "logger" {
+  function_name    = "lambda-mukesh-visitor-logger"
+  role             = aws_iam_role.lambda.arn
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  handler          = "handler.handler"
+  runtime          = "python3.12"
+  timeout          = 10
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.visitors.name
+    }
+  }
+
+  tags = {
+    Name = "lambda-mukesh-visitor-logger"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${aws_lambda_function.logger.function_name}"
+  retention_in_days = 7
+}
+
+# ============================================================================
+# Fargate cluster + minimal nginx task definition
+# ============================================================================
+
+resource "aws_ecs_cluster" "main" {
+  name = "fargate-mukesh-cluster"
+
+  tags = {
+    Name = "fargate-mukesh-cluster"
+  }
+}
+
+data "aws_iam_policy_document" "ecs_task_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ecs_task_execution" {
+  name               = "role-mukesh-ecs-task-execution"
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = "/ecs/nginx-mukesh"
+  retention_in_days = 7
+}
+
+resource "aws_ecs_task_definition" "nginx" {
+  family                   = "nginx-mukesh"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "nginx"
+      image     = "public.ecr.aws/nginx/nginx:alpine"
+      essential = true
+
+      portMappings = [
+        {
+          containerPort = 80
+          protocol      = "tcp"
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "ap-south-1"
+          awslogs-stream-prefix = "nginx"
+        }
+      }
+    }
+  ])
+
+  tags = {
+    Name = "nginx-mukesh"
+  }
+}
