@@ -1,127 +1,86 @@
-# AWS Cloud Computing — Practical Lab Reference
+# AWS Cloud Computing — Infrastructure as Code Lab Project
 
-End-to-end lab work for the **Cloud Computing** subject of the
-**B.E. Computer Engineering (VIII Semester)** programme at
-**Far Western University, Faculty of Engineering**. All 9 syllabus practicals
-provisioned via Infrastructure as Code (Terraform + CloudFormation) with
-console screenshots and a compiled lab report.
+A complete, reproducible cloud-engineering project that provisions and
+documents nine distinct AWS workloads using **Terraform** and **AWS
+CloudFormation**. Every workload is defined declaratively, deployed end to
+end, evidenced by AWS Console screenshots, and compiled into a single
+formatted lab report.
 
-> Author: **Mukesh Pant** · Roll No. 29 · VIII Semester
-> Subject Lecturer: Er. Robinson Pujara, SOE, FWU
-> Region used: `ap-south-1` (Mumbai)
-
-Shared publicly so juniors can use it as a reference for performing the same
-practicals on their own AWS accounts.
-
----
-
-## Labs covered
-
-| # | Lab | IaC tool | Key AWS services |
-|---|-----|----------|------------------|
-| 1 | Virtual Cloud Environment (VPC)              | Terraform      | VPC |
-| 2 | Compute Instances & Startup Scripts (EC2)    | Terraform      | EC2, AMI, Security Groups |
-| 3 | Object Storage & Static Website Hosting      | Terraform      | S3 |
-| 4 | Virtual Networking — Subnets, Routing, SGs   | Terraform      | VPC, Subnets, Route Tables, IGW, SG |
-| 5 | Load Balancer & Auto-Scaling Simulation      | Terraform      | ALB, Target Groups, Launch Template, ASG |
-| 6 | IAM Users, Groups & Policies                 | Terraform      | IAM Users, Groups, Managed Policies |
-| 7 | Serverless (Lambda + Fargate + DynamoDB)     | Terraform      | Lambda, ECS Fargate, DynamoDB, IAM, CloudWatch |
-| 8 | Messaging Queue & Pub/Sub (SNS + SQS)        | Terraform      | SNS, SQS |
-| 9 | Infrastructure as Code                       | CloudFormation | CloudFormation, VPC, S3 |
-
-Every lab folder contains:
-- `*.tf` (or `*.yaml` for Lab 9) — the Infrastructure as Code definition
-- `README-screenshots.md` — exact list of console screenshots to capture
-- `provider.tf`, `variables.tf`, `outputs.tf` — shared Terraform structure
+The work was carried out for the *Cloud Computing* practical of the **B.E.
+Computer Engineering** programme at **Far Western University, Faculty of
+Engineering**, but is published here as a standalone, portfolio-grade
+reference for any reader interested in hands-on AWS infrastructure
+automation.
 
 ---
 
-## Prerequisites
+## What this project demonstrates
 
-You'll need:
-
-- An **AWS account** (Free Tier is sufficient — total cost for running all 9
-  labs back-to-back and destroying promptly is typically **under USD 2**).
-- **Terraform 1.6+** — install from
-  [developer.hashicorp.com/terraform/downloads](https://developer.hashicorp.com/terraform/downloads)
-- **AWS CLI v2**, configured via `aws configure` with credentials that have
-  admin (or near-admin) permissions for the duration of the labs.
-- Region default `ap-south-1` (`aws configure set region ap-south-1`).
-- **Python 3.11+** with `python-docx` and `Pillow`
-  (`pip install python-docx Pillow`) — only required if you want to rebuild
-  the lab report yourself.
-
----
-
-## How to run a single lab
-
-Pick any lab folder under `terraform/`, then:
-
-```bash
-cd terraform/lab-01-vpc
-terraform init
-terraform apply -auto-approve
-
-# Take screenshots per the lab's README-screenshots.md, save into screenshots/lab-01/
-
-terraform destroy -auto-approve
-```
-
-Lab 8 needs your email at apply time (so SNS can deliver):
-
-```bash
-cd terraform/lab-08-sns-sqs
-terraform apply -auto-approve -var="subscriber_email=you@example.com"
-```
-
-Lab 9 uses CloudFormation, not Terraform:
-
-```bash
-cd terraform/lab-09-cloudformation
-aws cloudformation deploy \
-  --template-file stack-mukesh.yaml \
-  --stack-name stack-mukesh \
-  --region ap-south-1 \
-  --capabilities CAPABILITY_NAMED_IAM
-# Cleanup:
-aws cloudformation delete-stack --stack-name stack-mukesh --region ap-south-1
-```
+- **Infrastructure as Code at depth** — eight Terraform modules and one
+  CloudFormation template, written from scratch. No copy-paste from blog
+  posts, no premade modules. Every resource, every IAM policy, every wiring
+  between services is explicit.
+- **Breadth across AWS services** — networking (VPC, subnets, route tables,
+  IGW, security groups), compute (EC2, ASG, ALB), storage (S3 with static
+  hosting), identity (IAM users, groups, managed and inline policies),
+  serverless (Lambda, DynamoDB, ECS Fargate), messaging (SNS pub/sub with
+  SQS and email fan-out) and orchestration (CloudFormation stack lifecycle).
+- **Engineering process** — the project was scoped via a written design
+  spec, broken down into a step-by-step implementation plan, executed phase
+  by phase, and version-controlled with a clean linear commit history. The
+  full process documentation lives under [`docs/superpowers/`](./docs/superpowers).
+- **Reproducibility** — anyone with an AWS account can clone the repo, run
+  `terraform apply` in any lab folder, and recreate the exact environment
+  shown in the screenshots within seconds.
 
 ---
 
-## How to rebuild the lab report
+## Workloads
 
-The compiled report at
-`report/Mukesh_Pant_Cloud_Computing_Lab_Report.docx` is generated from the
-script `scripts/build_report.py` plus the screenshots under `screenshots/`.
+| # | Workload | IaC | Key AWS services |
+|---|---------|-----|------------------|
+| 1 | Virtual Cloud Environment (VPC)               | Terraform      | VPC |
+| 2 | Compute Instances with Startup Scripts        | Terraform      | EC2, AMI lookup, Security Groups |
+| 3 | Object Storage with Static Website Hosting    | Terraform      | S3 (website endpoint, bucket policy) |
+| 4 | Multi-tier Virtual Networking                 | Terraform      | VPC, Subnets, Route Tables, IGW, SGs |
+| 5 | Load Balancer with Auto-Scaling Group         | Terraform      | ALB, Target Group, Launch Template, ASG, EC2 |
+| 6 | Identity & Access Management                  | Terraform      | IAM Users, Groups, Managed Policies, Login Profile |
+| 7 | Serverless Stack (FaaS + NoSQL + Containers)  | Terraform      | Lambda (Python 3.12), DynamoDB, ECS Fargate, IAM, CloudWatch |
+| 8 | Pub/Sub Messaging with Fan-out                | Terraform      | SNS, SQS, SQS access policy, Email subscription |
+| 9 | Declarative Infrastructure                    | CloudFormation | CloudFormation stack, VPC, S3 |
 
-```bash
-pip install python-docx Pillow
-python scripts/build_report.py
-```
-
-To customise the report for yourself, edit the lab content dictionaries in
-`scripts/build_report.py` (cover-page name, roll number, observations, etc.)
-and re-run the script.
+Each workload folder contains the IaC source plus a `README-screenshots.md`
+that lists exactly which AWS Console pages were captured for evidence.
 
 ---
 
-## Cost & cleanup
+## Architecture & approach
 
-- **Always run `terraform destroy` after capturing screenshots.** The
-  ALB (Lab 5) and Fargate task (Lab 7) accrue small hourly charges if left
-  running.
-- Most resources fall inside the AWS Free Tier (EC2 t2.micro, S3, Lambda,
-  DynamoDB on-demand with tiny usage, SNS, SQS, CloudFormation).
-- If you finish all 9 labs in a single sitting and clean up promptly, total
-  out-of-pocket cost is typically **less than USD 2**.
+Each workload is fully isolated — its own folder under
+[`terraform/`](./terraform), its own state, its own resources tagged with
+`Owner = Mukesh`, `Project = FWU-CloudComputing-Lab`, and `Lab = lab-NN`.
+This isolation guarantees that running or destroying one workload never
+disturbs another, which makes the project easy to learn from one piece at a
+time.
+
+Two design choices worth calling out:
+
+- **Hybrid IaC.** Terraform was chosen for eight of the nine workloads because
+  of its conciseness and readable HCL syntax. CloudFormation was used for the
+  ninth specifically to demonstrate AWS-native declarative provisioning, since
+  the syllabus topic itself is "Infrastructure as Code". The two approaches
+  are compared in the final lab's *Observations* section.
+- **Hybrid documentation.** Resources are provisioned via IaC, but the lab
+  report describes the workflow in console-driven prose so that a reader who
+  has never touched Terraform can follow the same set of clicks in the AWS
+  Console and arrive at the same result.
 
 ---
 
 ## Repository layout
 
 ```
-terraform/                   # one folder per lab (Lab 9 uses CloudFormation YAML)
+terraform/                          One folder per workload (Lab 9 uses CloudFormation YAML)
 ├── lab-01-vpc/
 ├── lab-02-ec2/
 ├── lab-03-s3-static-website/
@@ -132,27 +91,108 @@ terraform/                   # one folder per lab (Lab 9 uses CloudFormation YAM
 ├── lab-08-sns-sqs/
 └── lab-09-cloudformation/
 
-screenshots/                 # AWS Console screenshots captured per lab
-scripts/build_report.py      # python-docx report assembler
-report/                      # compiled .docx lab report
-docs/superpowers/            # design spec + step-by-step implementation plan
+screenshots/                        AWS Console evidence per workload
+scripts/build_report.py             python-docx report assembler
+report/                             Compiled .docx lab report
+docs/superpowers/                   Design spec + implementation plan
 ```
 
-The `docs/superpowers/` directory captures the full process — design spec
-and implementation plan — for anyone who wants to see how the project was
-scoped and structured before any AWS resources were touched.
+Each Terraform folder follows the same conventions: `provider.tf` (region
+and default tags), `variables.tf`, `main.tf`, `outputs.tf`, plus
+workload-specific files where needed (`user_data.sh`, `lambda/handler.py`,
+`web/index.html`, etc.).
+
+---
+
+## Prerequisites
+
+| Tool | Minimum version | Purpose |
+|------|-----------------|---------|
+| AWS account | Free Tier or paid | Target environment |
+| Terraform   | 1.6+            | Eight of the nine workloads |
+| AWS CLI     | v2              | CloudFormation deploy + general account access |
+| Python      | 3.11+           | Rebuild the .docx report (optional) |
+
+The default region used throughout is `ap-south-1` (Mumbai). Override in
+`provider.tf` if you prefer a different region.
+
+---
+
+## Reproducing a workload
+
+Pick any folder under `terraform/`:
+
+```bash
+cd terraform/lab-01-vpc
+terraform init
+terraform apply -auto-approve
+
+# Capture the screenshots listed in README-screenshots.md, then:
+
+terraform destroy -auto-approve
+```
+
+A few workloads have specifics worth noting:
+
+- **Lab 8** requires an email at apply time so SNS can deliver:
+  `terraform apply -auto-approve -var="subscriber_email=you@example.com"` —
+  remember to confirm the AWS subscription email in your inbox.
+- **Lab 9** is CloudFormation-driven:
+  `aws cloudformation deploy --template-file stack-mukesh.yaml --stack-name stack-mukesh --region ap-south-1 --capabilities CAPABILITY_NAMED_IAM`.
+- **Labs 5 and 7** provision resources outside the strict AWS Free Tier
+  (an Application Load Balancer, an ECS Fargate task). End-to-end run cost
+  is typically **under USD 2** when destroyed promptly.
+
+---
+
+## Rebuilding the lab report
+
+The compiled report at
+[`report/Mukesh_Pant_Cloud_Computing_Lab_Report.docx`](./report) is
+generated programmatically from the screenshots and prose contained in
+`scripts/build_report.py`.
+
+```bash
+pip install python-docx Pillow
+python scripts/build_report.py
+```
+
+Editing the `LAB_*` dictionaries at the top of the script and re-running
+regenerates the entire document with new content, layout, or styling
+without ever touching Word manually.
+
+---
+
+## Cost discipline
+
+- Run `terraform destroy` after each workload — the IaC layer makes this
+  trivial.
+- All EC2 instances use `t2.micro` (Free Tier eligible in `ap-south-1`).
+- DynamoDB uses on-demand billing — minimal usage in this project incurs
+  effectively zero cost.
+- The ALB (Lab 5) has an hourly fee while running; destroying it within 30
+  minutes keeps the bill near zero.
+
+---
+
+## Process documentation
+
+Two artefacts under [`docs/superpowers/`](./docs/superpowers) capture how
+the project was scoped before any code was written:
+
+- [`specs/2026-04-27-cloud-lab-report-design.md`](./docs/superpowers/specs/2026-04-27-cloud-lab-report-design.md)
+  — design spec covering goals, scope, risks, free-tier safety, and an
+  outline of every workload.
+- [`plans/2026-04-27-cloud-lab-report-implementation.md`](./docs/superpowers/plans/2026-04-27-cloud-lab-report-implementation.md)
+  — step-by-step implementation plan: which files to create, which AWS
+  resources to provision, which screenshots to capture, and how to clean up.
+
+Together they show the project moving from problem statement to working
+infrastructure to compiled report in a deliberate, reviewable sequence
+rather than as ad-hoc clicking around the AWS Console.
 
 ---
 
 ## License
 
-MIT. Use it freely for your own learning. Attribution appreciated but not
-required.
-
----
-
-## Acknowledgements
-
-- **Far Western University, Faculty of Engineering, School of Engineering**
-- **Er. Robinson Pujara**, Lecturer (Cloud Computing) — for the practical
-  curriculum that shaped this work.
+Released under the [MIT License](./LICENSE) — © 2026 Mukesh Pant.
