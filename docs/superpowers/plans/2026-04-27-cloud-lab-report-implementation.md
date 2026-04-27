@@ -1338,29 +1338,17 @@ docs/         # design spec + implementation plan (process documentation)
 MIT — use it freely for your own learning. Attribution appreciated but not required.
 ```
 
-### Task 12.2: [Mukesh] Privacy pass on screenshots
+### Task 12.2: ~~Privacy pass~~ — SKIPPED
 
-Before pushing publicly, redact AWS Account IDs from every screenshot. Account IDs appear in the top-right banner of every console screenshot (`Account: 123456789012` or `<account-alias> @ 1234-5678-9012`). They also appear in IAM and CloudFormation screenshots in URLs and ARNs.
+Mukesh waived this. Free-tier practice account, account ID is not sensitive in this context. Moving directly to commit + push.
 
-- [ ] **Step 1: Decide redaction approach**
+### Task 12.3: Commit final polish
 
-Two options:
-1. **Manual:** open each PNG in Snipping Tool / Paint / GIMP / any editor, draw a black or blurred rectangle over the account ID, save in place.
-2. **Programmatic:** write a quick `Pillow` script that pastes a black rectangle at a fixed pixel range on each image. Less foolproof because banner positions vary slightly between AWS console pages — manual is safer.
-
-Recommended: **manual**. ~24 screenshots × 30 seconds each = ~12 minutes.
-
-- [ ] **Step 2: Verify**
-
-Open each screenshot one more time and visually confirm no 12-digit account number is readable.
-
-### Task 12.3: Commit final polish + redacted screenshots
-
-- [ ] **Step 1: Commit redacted screenshots and README**
+- [ ] **Step 1: Commit README**
 
 ```bash
-git add screenshots/ README.md
-git commit -m "docs: add public README and redact account IDs in screenshots"
+git add README.md
+git commit -m "docs: add public README for the reference repo"
 ```
 
 ### Task 12.4: [Mukesh] Push to GitHub
