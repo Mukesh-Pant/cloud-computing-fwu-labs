@@ -1,0 +1,40 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform-built Lambda artefacts
+**/lambda/handler.zip
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# Local report drafts (we keep the final committed)
+report/*.tmp.docx
+
+# Classmate reference reports (not ours to publish)
+AWS_Lab_Report_Complete.docx
+cloud_computing_practical-report_file.docx
