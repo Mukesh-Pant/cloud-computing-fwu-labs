@@ -1,9 +1,9 @@
 # ============================================================================
-# DynamoDB table - "visitors-mukesh"
+# DynamoDB table - "visitors-${var.suffix}"
 # ============================================================================
 
 resource "aws_dynamodb_table" "visitors" {
-  name         = "visitors-mukesh"
+  name         = "visitors-${var.suffix}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
@@ -13,12 +13,12 @@ resource "aws_dynamodb_table" "visitors" {
   }
 
   tags = {
-    Name = "visitors-mukesh"
+    Name = "visitors-${var.suffix}"
   }
 }
 
 # ============================================================================
-# Lambda function - lambda-mukesh-visitor-logger
+# Lambda function - lambda-${var.suffix}-visitor-logger
 # ============================================================================
 
 data "aws_iam_policy_document" "lambda_assume" {
@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "lambda_assume" {
 }
 
 resource "aws_iam_role" "lambda" {
-  name               = "role-mukesh-lambda"
+  name               = "role-${var.suffix}-lambda"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
 }
 
@@ -43,7 +43,7 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 }
 
 resource "aws_iam_role_policy" "lambda_ddb" {
-  name = "ddb-write-mukesh"
+  name = "ddb-write-${var.suffix}"
   role = aws_iam_role.lambda.id
 
   policy = jsonencode({
@@ -65,7 +65,7 @@ data "archive_file" "lambda_zip" {
 }
 
 resource "aws_lambda_function" "logger" {
-  function_name    = "lambda-mukesh-visitor-logger"
+  function_name    = "lambda-${var.suffix}-visitor-logger"
   role             = aws_iam_role.lambda.arn
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
@@ -76,11 +76,12 @@ resource "aws_lambda_function" "logger" {
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.visitors.name
+      OWNER_NAME = var.display_name
     }
   }
 
   tags = {
-    Name = "lambda-mukesh-visitor-logger"
+    Name = "lambda-${var.suffix}-visitor-logger"
   }
 }
 
@@ -94,10 +95,10 @@ resource "aws_cloudwatch_log_group" "lambda" {
 # ============================================================================
 
 resource "aws_ecs_cluster" "main" {
-  name = "fargate-mukesh-cluster"
+  name = "fargate-${var.suffix}-cluster"
 
   tags = {
-    Name = "fargate-mukesh-cluster"
+    Name = "fargate-${var.suffix}-cluster"
   }
 }
 
@@ -113,53 +114,52 @@ data "aws_iam_policy_document" "ecs_task_assume" {
 }
 
 resource "aws_iam_role" "ecs_task_execution" {
-  name               = "role-mukesh-ecs-task-execution"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
+  name = "role-${var.suffix}-ecs-task-execution"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+    }]
+  })
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
+resource "aws_iam_role_policy_attachment" "ecs_exec" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {
-  name              = "/ecs/nginx-mukesh"
+  name              = "/ecs/nginx-${var.suffix}"
   retention_in_days = 7
 }
 
 resource "aws_ecs_task_definition" "nginx" {
-  family                   = "nginx-mukesh"
+  family                   = "nginx-${var.suffix}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = 256
+  memory                   = 512
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "nginx"
-      image     = "public.ecr.aws/nginx/nginx:alpine"
-      essential = true
+  container_definitions = jsonencode([{
+    name      = "nginx"
+    image     = "public.ecr.aws/nginx/nginx:alpine"
+    essential = true
 
-      portMappings = [
-        {
-          containerPort = 80
-          protocol      = "tcp"
-        }
-      ]
+    portMappings = [{
+      containerPort = 80
+      protocol      = "tcp"
+    }]
 
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs.name
-          awslogs-region        = "ap-south-1"
-          awslogs-stream-prefix = "nginx"
-        }
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "nginx"
       }
     }
-  ])
-
-  tags = {
-    Name = "nginx-mukesh"
-  }
+  }])
 }
