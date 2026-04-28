@@ -6,7 +6,7 @@ cat > /var/www/html/index.html <<'HTML'
 <!doctype html>
 <html>
 <head>
-  <title>Mukesh's EC2 — Lab 2</title>
+  <title>${display_name}'s EC2 — Lab 2</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body { font-family: system-ui, sans-serif; text-align: center; padding-top: 80px; background: #f5f5f5; color: #222; }
@@ -16,9 +16,9 @@ cat > /var/www/html/index.html <<'HTML'
   </style>
 </head>
 <body>
-  <h1>Hello from Mukesh's EC2 instance</h1>
+  <h1>Hello from ${display_name}'s EC2 instance</h1>
   <p class="badge">FWU Cloud Computing — Practical Lab 2</p>
-  <p>Roll No. 29 &middot; Region: ap-south-1 (Mumbai)</p>
+  <p>Roll No. ${roll_number} &middot; Region: ${region} (${region_label})</p>
   <p>Apache served this page at boot via EC2 user_data.</p>
 </body>
 </html>

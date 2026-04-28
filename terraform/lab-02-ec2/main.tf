@@ -14,7 +14,7 @@ data "aws_ami" "al2023" {
 }
 
 resource "aws_security_group" "ec2" {
-  name        = "mukesh-ec2-sg"
+  name        = "${var.suffix}-ec2-sg"
   description = "Allow SSH and HTTP for Lab 2"
 
   ingress {
@@ -41,17 +41,23 @@ resource "aws_security_group" "ec2" {
   }
 
   tags = {
-    Name = "sg-mukesh-ec2"
+    Name = "${var.suffix}-ec2-sg"
   }
 }
 
-resource "aws_instance" "mukesh" {
+resource "aws_instance" "main" {
   ami                    = data.aws_ami.al2023.id
   instance_type          = "t2.micro"
   vpc_security_group_ids = [aws_security_group.ec2.id]
-  user_data              = file("${path.module}/user_data.sh")
+
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    display_name = var.display_name
+    roll_number  = var.roll_number
+    region       = var.region
+    region_label = var.region_label
+  })
 
   tags = {
-    Name = "ec2-mukesh"
+    Name = "ec2-${var.suffix}"
   }
 }
