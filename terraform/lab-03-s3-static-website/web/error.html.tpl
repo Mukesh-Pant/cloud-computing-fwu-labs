@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Page Not Found — Mukesh's S3 Site</title>
+  <title>Page Not Found — ${full_name}'s S3 Site</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 80px; }
     h2 { color: #cc0000; }
@@ -10,6 +10,6 @@
 </head>
 <body>
   <h2>404 — Page not found</h2>
-  <p>Mukesh Pant's S3 static website — Lab 3, FWU Cloud Computing</p>
+  <p>${full_name}'s S3 static website — Lab 3, ${subject_name}</p>
 </body>
 </html>

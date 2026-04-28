@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mukesh Pant — S3 Static Website</title>
+  <title>${full_name} — S3 Static Website</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -39,12 +39,12 @@
 </head>
 <body>
   <div class="card">
-    <h1>Mukesh Pant</h1>
+    <h1>${full_name}</h1>
     <p class="subtitle">
-      FWU — Faculty of Engineering &middot; Roll No. 29<br>
+      ${institution} — ${faculty} &middot; Roll No. ${roll_number}<br>
       Cloud Computing Practical — Lab 3
     </p>
-    <span class="badge">Hosted on Amazon S3 &middot; ap-south-1</span>
+    <span class="badge">Hosted on Amazon S3 &middot; ${region}</span>
     <p class="subtitle" style="margin-top:24px; font-size:0.95rem;">
       This page is served from an S3 bucket configured for static website hosting.<br>
       No web server required.
