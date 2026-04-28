@@ -1,11 +1,11 @@
 data "aws_caller_identity" "current" {}
 
 # ----------------------------------------------------------------------------
-# IAM group: Developers-mukesh — gets EC2 full access
+# IAM group: Developers-${var.suffix} -- gets EC2 full access
 # ----------------------------------------------------------------------------
 
 resource "aws_iam_group" "developers" {
-  name = "Developers-mukesh"
+  name = "Developers-${var.suffix}"
 }
 
 resource "aws_iam_group_policy_attachment" "developers_ec2" {
@@ -14,14 +14,14 @@ resource "aws_iam_group_policy_attachment" "developers_ec2" {
 }
 
 # ----------------------------------------------------------------------------
-# Developer user: mukesh-dev (member of Developers group, has console password)
+# Developer user: ${var.suffix}-dev (member of Developers group, has console password)
 # ----------------------------------------------------------------------------
 
 resource "aws_iam_user" "dev" {
-  name = "mukesh-dev"
+  name = "${var.suffix}-dev"
 
   tags = {
-    Owner = "Mukesh"
+    Owner = var.display_name
     Role  = "Developer"
   }
 }
@@ -38,14 +38,14 @@ resource "aws_iam_user_login_profile" "dev" {
 }
 
 # ----------------------------------------------------------------------------
-# Read-only user: mukesh-readonly (direct policy attachment, no console login)
+# Read-only user: ${var.suffix}-readonly (direct policy attachment, no console login)
 # ----------------------------------------------------------------------------
 
 resource "aws_iam_user" "readonly" {
-  name = "mukesh-readonly"
+  name = "${var.suffix}-readonly"
 
   tags = {
-    Owner = "Mukesh"
+    Owner = var.display_name
     Role  = "ReadOnly"
   }
 }
