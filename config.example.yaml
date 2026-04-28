@@ -1,0 +1,26 @@
+# Reference copy of config.yaml with placeholder values.
+# Copy to config.yaml and edit, or run `python scripts/personalize.py`.
+
+student:
+  suffix: jane                       # lowercase, [a-z0-9-]+, no spaces (used in resource names)
+  display_name: Jane                 # short display name (tags, HTML, prose)
+  full_name: Jane Doe                # full name on cover page
+  roll_number: "5"
+  semester: "VII"
+  program: B.E. Computer Engineering
+
+institution:
+  university: Your University
+  faculty: Faculty of Engineering
+  school: School of Engineering
+
+subject:
+  name: Cloud Computing
+
+professor:
+  name: Dr. Alice Smith
+  title: Lecturer, School of Engineering
+
+aws:
+  region: ap-south-1
+  region_label: Asia Pacific (Mumbai)

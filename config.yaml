@@ -1,0 +1,19 @@
+student:
+  suffix: mukesh
+  display_name: Mukesh
+  full_name: Mukesh Pant
+  roll_number: '29'
+  semester: VIII
+  program: B.E. Computer Engineering
+institution:
+  university: Far Western University
+  faculty: Faculty of Engineering
+  school: School of Engineering
+subject:
+  name: Cloud Computing
+professor:
+  name: Er. Robinson Pujara
+  title: Lecturer, School of Engineering, FWU
+aws:
+  region: ap-south-1
+  region_label: Asia Pacific (Mumbai)
