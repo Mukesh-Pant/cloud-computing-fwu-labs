@@ -1,14 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  FWU Lab 9 - Mukesh Pant - Infrastructure as Code via AWS CloudFormation.
+  FWU Lab 9 - Infrastructure as Code via AWS CloudFormation.
   Provisions a small representative stack (VPC + S3 bucket) to demonstrate
   declarative infrastructure provisioning with a YAML template.
 
 Parameters:
   OwnerName:
     Type: String
-    Default: Mukesh
-    Description: Owner tag value applied to all resources
+    Default: mukesh
+    Description: Owner identifier (lowercase) used in resource names and tags
 
   VpcCidr:
     Type: String
@@ -24,7 +24,7 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: vpc-mukesh-cfn
+          Value: !Sub "vpc-${OwnerName}-cfn"
         - Key: Owner
           Value: !Ref OwnerName
         - Key: Project
@@ -35,10 +35,10 @@ Resources:
   CfnBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "mukesh-cfn-${AWS::AccountId}"
+      BucketName: !Sub "${OwnerName}-cfn-${AWS::AccountId}"
       Tags:
         - Key: Name
-          Value: mukesh-cfn-bucket
+          Value: !Sub "${OwnerName}-cfn-bucket"
         - Key: Owner
           Value: !Ref OwnerName
         - Key: Project
