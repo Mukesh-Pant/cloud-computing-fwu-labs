@@ -4,7 +4,7 @@ resource "aws_vpc" "net" {
   enable_dns_support   = true
 
   tags = {
-    Name = "vpc-mukesh-net"
+    Name = "vpc-${var.suffix}-net"
   }
 }
 
@@ -12,18 +12,18 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.net.id
 
   tags = {
-    Name = "igw-mukesh"
+    Name = "igw-${var.suffix}"
   }
 }
 
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.net.id
   cidr_block              = "10.30.1.0/24"
-  availability_zone       = "ap-south-1a"
+  availability_zone       = "${var.region}a"
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "subnet-mukesh-public"
+    Name = "subnet-${var.suffix}-public"
     Tier = "public"
   }
 }
@@ -31,10 +31,10 @@ resource "aws_subnet" "public" {
 resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.net.id
   cidr_block        = "10.30.2.0/24"
-  availability_zone = "ap-south-1b"
+  availability_zone = "${var.region}b"
 
   tags = {
-    Name = "subnet-mukesh-private"
+    Name = "subnet-${var.suffix}-private"
     Tier = "private"
   }
 }
@@ -48,7 +48,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "rt-mukesh-public"
+    Name = "rt-${var.suffix}-public"
   }
 }
 
@@ -56,7 +56,7 @@ resource "aws_route_table" "private" {
   vpc_id = aws_vpc.net.id
 
   tags = {
-    Name = "rt-mukesh-private"
+    Name = "rt-${var.suffix}-private"
   }
 }
 
@@ -71,7 +71,7 @@ resource "aws_route_table_association" "private" {
 }
 
 resource "aws_security_group" "web" {
-  name        = "mukesh-web-sg"
+  name        = "${var.suffix}-web-sg"
   description = "Allow HTTP and HTTPS from anywhere (web tier)"
   vpc_id      = aws_vpc.net.id
 
@@ -99,12 +99,12 @@ resource "aws_security_group" "web" {
   }
 
   tags = {
-    Name = "mukesh-web-sg"
+    Name = "${var.suffix}-web-sg"
   }
 }
 
 resource "aws_security_group" "db" {
-  name        = "mukesh-db-sg"
+  name        = "${var.suffix}-db-sg"
   description = "Allow MySQL from web tier only (database tier)"
   vpc_id      = aws_vpc.net.id
 
@@ -124,6 +124,6 @@ resource "aws_security_group" "db" {
   }
 
   tags = {
-    Name = "mukesh-db-sg"
+    Name = "${var.suffix}-db-sg"
   }
 }
