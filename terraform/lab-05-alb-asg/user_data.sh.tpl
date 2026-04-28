@@ -11,7 +11,7 @@ cat > /var/www/html/index.html <<HTML
 <!doctype html>
 <html>
 <head>
-  <title>Mukesh ALB Demo</title>
+  <title>${display_name} ALB Demo</title>
   <style>
     body { font-family: system-ui; text-align: center; padding-top: 80px; background: #232f3e; color: white; }
     h1 { color: #ff9900; }
@@ -19,8 +19,8 @@ cat > /var/www/html/index.html <<HTML
   </style>
 </head>
 <body>
-  <h1>Mukesh ALB Demo &mdash; Lab 5</h1>
-  <p>FWU Cloud Computing &middot; Roll No. 29</p>
+  <h1>${display_name} ALB Demo &mdash; Lab 5</h1>
+  <p>FWU Cloud Computing &middot; Roll No. ${roll_number}</p>
   <div class="info">
     <p>Served by instance: <strong>$INSTANCE_ID</strong></p>
     <p>Availability Zone: <strong>$AZ</strong></p>

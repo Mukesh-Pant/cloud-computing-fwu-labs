@@ -7,28 +7,28 @@ resource "aws_vpc" "alb" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = { Name = "vpc-mukesh-alb" }
+  tags = { Name = "vpc-${var.suffix}-alb" }
 }
 
 resource "aws_internet_gateway" "alb" {
   vpc_id = aws_vpc.alb.id
-  tags   = { Name = "igw-mukesh-alb" }
+  tags   = { Name = "igw-${var.suffix}-alb" }
 }
 
 resource "aws_subnet" "a" {
   vpc_id                  = aws_vpc.alb.id
   cidr_block              = "10.40.1.0/24"
-  availability_zone       = "ap-south-1a"
+  availability_zone       = "${var.region}a"
   map_public_ip_on_launch = true
-  tags                    = { Name = "subnet-mukesh-alb-a" }
+  tags                    = { Name = "subnet-${var.suffix}-alb-a" }
 }
 
 resource "aws_subnet" "b" {
   vpc_id                  = aws_vpc.alb.id
   cidr_block              = "10.40.2.0/24"
-  availability_zone       = "ap-south-1b"
+  availability_zone       = "${var.region}b"
   map_public_ip_on_launch = true
-  tags                    = { Name = "subnet-mukesh-alb-b" }
+  tags                    = { Name = "subnet-${var.suffix}-alb-b" }
 }
 
 resource "aws_route_table" "alb" {
@@ -39,7 +39,7 @@ resource "aws_route_table" "alb" {
     gateway_id = aws_internet_gateway.alb.id
   }
 
-  tags = { Name = "rt-mukesh-alb-public" }
+  tags = { Name = "rt-${var.suffix}-alb-public" }
 }
 
 resource "aws_route_table_association" "a" {
@@ -57,7 +57,7 @@ resource "aws_route_table_association" "b" {
 # ----------------------------------------------------------------------------
 
 resource "aws_security_group" "web" {
-  name        = "mukesh-alb-web-sg"
+  name        = "${var.suffix}-alb-web-sg"
   description = "Allow HTTP from anywhere for ALB demo"
   vpc_id      = aws_vpc.alb.id
 
@@ -75,7 +75,7 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "mukesh-alb-web-sg" }
+  tags = { Name = "${var.suffix}-alb-web-sg" }
 }
 
 # ----------------------------------------------------------------------------
@@ -92,17 +92,19 @@ data "aws_ami" "al2023" {
 }
 
 resource "aws_launch_template" "lt" {
-  name_prefix   = "lt-mukesh-"
+  name_prefix   = "lt-${var.suffix}-"
   image_id      = data.aws_ami.al2023.id
   instance_type = "t2.micro"
-  user_data     = base64encode(file("${path.module}/user_data.sh"))
-
+  user_data = base64encode(templatefile("${path.module}/user_data.sh.tpl", {
+    display_name = var.display_name
+    roll_number  = var.roll_number
+  }))
   vpc_security_group_ids = [aws_security_group.web.id]
 
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name = "ec2-mukesh-asg"
+      Name = "ec2-${var.suffix}-asg"
     }
   }
 }
@@ -112,16 +114,16 @@ resource "aws_launch_template" "lt" {
 # ----------------------------------------------------------------------------
 
 resource "aws_lb" "main" {
-  name               = "alb-mukesh"
+  name               = "alb-${var.suffix}"
   load_balancer_type = "application"
   security_groups    = [aws_security_group.web.id]
   subnets            = [aws_subnet.a.id, aws_subnet.b.id]
 
-  tags = { Name = "alb-mukesh" }
+  tags = { Name = "alb-${var.suffix}" }
 }
 
 resource "aws_lb_target_group" "tg" {
-  name     = "tg-mukesh"
+  name     = "tg-${var.suffix}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.alb.id
@@ -135,7 +137,7 @@ resource "aws_lb_target_group" "tg" {
     unhealthy_threshold = 2
   }
 
-  tags = { Name = "tg-mukesh" }
+  tags = { Name = "tg-${var.suffix}" }
 }
 
 resource "aws_lb_listener" "http" {
@@ -150,13 +152,13 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_autoscaling_group" "asg" {
-  name                = "asg-mukesh"
-  min_size            = 2
-  max_size            = 3
-  desired_capacity    = 2
-  vpc_zone_identifier = [aws_subnet.a.id, aws_subnet.b.id]
-  target_group_arns   = [aws_lb_target_group.tg.arn]
-  health_check_type   = "ELB"
+  name                      = "asg-${var.suffix}"
+  min_size                  = 2
+  max_size                  = 3
+  desired_capacity          = 2
+  vpc_zone_identifier       = [aws_subnet.a.id, aws_subnet.b.id]
+  target_group_arns         = [aws_lb_target_group.tg.arn]
+  health_check_type         = "ELB"
   health_check_grace_period = 120
 
   launch_template {
@@ -166,7 +168,7 @@ resource "aws_autoscaling_group" "asg" {
 
   tag {
     key                 = "Name"
-    value               = "ec2-mukesh-asg"
+    value               = "ec2-${var.suffix}-asg"
     propagate_at_launch = true
   }
 }
