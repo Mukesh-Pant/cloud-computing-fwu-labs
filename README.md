@@ -138,10 +138,72 @@ A few workloads have specifics worth noting:
   `terraform apply -auto-approve -var="subscriber_email=you@example.com"` —
   remember to confirm the AWS subscription email in your inbox.
 - **Lab 9** is CloudFormation-driven:
-  `aws cloudformation deploy --template-file stack-mukesh.yaml --stack-name stack-mukesh --region ap-south-1 --capabilities CAPABILITY_NAMED_IAM`.
+  `aws cloudformation deploy --template-file stack.yaml --stack-name stack-mukesh --region ap-south-1 --capabilities CAPABILITY_NAMED_IAM`.
 - **Labs 5 and 7** provision resources outside the strict AWS Free Tier
   (an Application Load Balancer, an ECS Fargate task). End-to-end run cost
   is typically **under USD 2** when destroyed promptly.
+
+---
+
+## Personalize this template
+
+The repository is published as a personalizable template. Resource names,
+tags, the rendered HTML pages, the Lambda payload, the CloudFormation
+parameter, and every line of the compiled lab report all read from a
+single root file: [`config.yaml`](./config.yaml). Out of the box, the
+defaults reproduce the author's own resources and report; with one edit,
+the entire project re-skins to a different identity.
+
+### Option 1 — Interactive wizard
+
+```bash
+python scripts/personalize.py
+```
+
+The wizard prompts for every value (resource suffix, display name, full
+name, roll number, semester, program, university, professor, AWS region).
+Press Enter on any prompt to keep the current default. After the prompts
+it propagates the values into per-lab `terraform.auto.tfvars.json`
+(auto-loaded by Terraform) and rewrites the default `OwnerName`
+parameter in Lab 9's CloudFormation template.
+
+### Option 2 — Edit `config.yaml` directly
+
+Open [`config.yaml`](./config.yaml), change the values you care about,
+save, then run a non-interactive propagation:
+
+```bash
+python scripts/personalize.py --apply --no-prompt
+```
+
+### Option 3 — One-shot CLI flags
+
+```bash
+python scripts/personalize.py \
+  --suffix jane \
+  --display-name Jane \
+  --full-name "Jane Doe" \
+  --roll 5 \
+  --semester VII \
+  --professor "Dr. Alice Smith" \
+  --apply --no-prompt
+```
+
+### After personalizing
+
+- `terraform apply -auto-approve` in any lab folder uses *your* values —
+  resources will be named `vpc-jane`, `ec2-jane`, and so on.
+- `python scripts/build_report.py` produces
+  `report/<Your_Name>_Cloud_Computing_Lab_Report.docx` with a cover page,
+  figure captions, and procedure prose all referencing your identity.
+- The screenshots committed under `screenshots/` are the original
+  author's. Capture your own per each lab's `README-screenshots.md` and
+  drop them into the same paths to overwrite.
+
+The `subject_email` for Lab 8 is intentionally **not** in `config.yaml` —
+it's a runtime CLI argument
+(`-var="subscriber_email=you@example.com"`) so personal email addresses
+never get committed to the repo.
 
 ---
 
