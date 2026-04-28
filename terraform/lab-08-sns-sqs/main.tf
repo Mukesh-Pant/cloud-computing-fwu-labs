@@ -1,26 +1,26 @@
 # ============================================================================
-# SNS topic - sns-mukesh-notifications
+# SNS topic
 # ============================================================================
 
 resource "aws_sns_topic" "main" {
-  name = "sns-mukesh-notifications"
+  name = "sns-${var.suffix}-notifications"
 
   tags = {
-    Name = "sns-mukesh-notifications"
+    Name = "sns-${var.suffix}-notifications"
   }
 }
 
 # ============================================================================
-# SQS queue - sqs-mukesh-orders
+# SQS queue
 # ============================================================================
 
 resource "aws_sqs_queue" "main" {
-  name                       = "sqs-mukesh-orders"
+  name                       = "sqs-${var.suffix}-orders"
   visibility_timeout_seconds = 30
   message_retention_seconds  = 345600 # 4 days
 
   tags = {
-    Name = "sqs-mukesh-orders"
+    Name = "sqs-${var.suffix}-orders"
   }
 }
 
