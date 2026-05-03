@@ -13,13 +13,14 @@ institution:
   university: Your University
   faculty: Faculty of Engineering
   school: School of Engineering
+  location: City, District
 
 subject:
   name: Cloud Computing
 
 professor:
   name: Dr. Alice Smith
-  title: Lecturer, School of Engineering
+  title: Lecturer, School of Engineering, Your University
 
 aws:
   region: ap-south-1

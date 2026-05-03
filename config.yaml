@@ -9,11 +9,12 @@ institution:
   university: Far Western University
   faculty: Faculty of Engineering
   school: School of Engineering
+  location: Mahendranagar, Kanchanpur
 subject:
   name: Cloud Computing
 professor:
   name: Er. Robinson Pujara
-  title: Lecturer, School of Engineering, FWU
+  title: Lecturer, School of Engineering, Far Western University
 aws:
   region: ap-south-1
   region_label: Asia Pacific (Mumbai)
