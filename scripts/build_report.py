@@ -111,6 +111,33 @@ def _add_page_field(run):
     run._r.append(fld_end)
 
 
+def configure_heading_styles(doc):
+    """Configure Word's native Heading 1 / Heading 2 styles to match the
+    polished reference (navy bold, sized for an academic doc).
+
+    Using real heading styles (instead of raw runs) is what lets Word's
+    navigation pane jump between labs and lets the TOC field populate
+    page numbers automatically.
+    """
+    h1 = doc.styles["Heading 1"]
+    h1.font.name = FONT_HEADING
+    h1.font.size = Pt(16)
+    h1.font.bold = True
+    h1.font.color.rgb = COLOR_PRIMARY
+    h1.paragraph_format.space_before = Pt(12)
+    h1.paragraph_format.space_after = Pt(6)
+    h1.paragraph_format.keep_with_next = True
+
+    h2 = doc.styles["Heading 2"]
+    h2.font.name = FONT_HEADING
+    h2.font.size = Pt(13)
+    h2.font.bold = True
+    h2.font.color.rgb = COLOR_PRIMARY
+    h2.paragraph_format.space_before = Pt(8)
+    h2.paragraph_format.space_after = Pt(2)
+    h2.paragraph_format.keep_with_next = True
+
+
 # ---------------------------------------------------------------------------
 # Section / page setup
 # ---------------------------------------------------------------------------
@@ -1030,6 +1057,7 @@ def build():
     doc = Document()
 
     configure_default_styles(doc)
+    configure_heading_styles(doc)
     configure_sections(doc, cfg)
 
     add_cover_page(doc, cfg)
