@@ -36,7 +36,7 @@ COLOR_RULE = RGBColor(0xBF, 0xBF, 0xBF)      # horizontal rule under lab titles
 FONT_BODY = "Calibri"
 FONT_HEADING = "Calibri"
 
-SIZE_BODY = 12
+SIZE_BODY = 11
 SIZE_LAB_TITLE = 22
 SIZE_H1 = 14
 SIZE_H3 = 12
@@ -147,8 +147,8 @@ def configure_sections(doc, cfg):
     section = doc.sections[0]
     section.top_margin = Inches(1.0)
     section.bottom_margin = Inches(1.0)
-    section.left_margin = Inches(0.85)
-    section.right_margin = Inches(0.85)
+    section.left_margin = Inches(1.0)
+    section.right_margin = Inches(1.0)
     section.header_distance = Inches(0.5)
     section.footer_distance = Inches(0.5)
 
@@ -178,7 +178,7 @@ def configure_default_styles(doc):
     style.font.name = FONT_BODY
     style.font.size = Pt(SIZE_BODY)
     style.paragraph_format.space_after = Pt(6)
-    style.paragraph_format.line_spacing = 1.25
+    style.paragraph_format.line_spacing = 1.3
 
 
 # ---------------------------------------------------------------------------
