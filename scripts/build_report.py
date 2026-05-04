@@ -42,9 +42,9 @@ SIZE_H1 = 14
 SIZE_H3 = 12
 SIZE_CAPTION = 10
 SIZE_TOC_ENTRY = 12
-SIZE_COVER_TITLE = 30
-SIZE_COVER_BIG = 22
-SIZE_COVER_NAME = 18
+SIZE_COVER_TITLE = 20   # university line — was 30
+SIZE_COVER_BIG = 22     # subject (CLOUD COMPUTING) — unchanged
+SIZE_COVER_NAME = 15    # student full name — was 18
 
 
 def output_path(cfg) -> Path:
@@ -225,51 +225,69 @@ def add_cover_page(doc, cfg):
     _cover_centered(doc, cfg.institution.university.upper(),
                     bold=True, size=SIZE_COVER_TITLE, color=COLOR_PRIMARY,
                     space_after=8)
-    _cover_centered(doc, cfg.institution.faculty, bold=True, size=18, color=COLOR_SECONDARY)
-    p_school = _cover_centered(doc, cfg.institution.school, italic=True, size=14, color=COLOR_GREY)
+    _cover_centered(doc, cfg.institution.faculty,
+                    bold=False, size=14, color=COLOR_PRIMARY)
+    p_school = _cover_centered(doc, cfg.institution.school,
+                               italic=True, size=13, color=COLOR_GREY)
+    _cover_centered(doc, cfg.institution.location,
+                    italic=True, size=11, color=COLOR_GREY)
     _add_horizontal_rule(p_school, color=COLOR_PRIMARY, size=12)
 
     for _ in range(3):
         doc.add_paragraph()
 
-    _cover_centered(doc, "A LAB REPORT", italic=True, size=14, color=COLOR_GREY,
-                    space_after=4)
-    _cover_centered(doc, "ON", italic=True, size=12, color=COLOR_GREY,
-                    space_after=4)
-    p_title = _cover_centered(doc, cfg.subject.name.upper(), bold=True,
-                              size=SIZE_COVER_BIG, color=COLOR_PRIMARY,
-                              space_after=2)
-    _cover_centered(doc, "(Practical)", italic=True, size=14, color=COLOR_SECONDARY,
-                    space_after=4)
+    _cover_centered(doc, "A LAB REPORT",
+                    bold=True, size=14, color=COLOR_GREY, space_after=4)
+    _cover_centered(doc, "ON",
+                    size=12, color=COLOR_GREY, space_after=4)
+    p_title = _cover_centered(doc, cfg.subject.name.upper(),
+                              bold=True, size=SIZE_COVER_BIG,
+                              color=COLOR_PRIMARY, space_after=2)
+    _cover_centered(doc, "(Practical)",
+                    italic=True, size=12, color=COLOR_GREY, space_after=4)
     _add_horizontal_rule(p_title, color=COLOR_PRIMARY, size=8)
 
     for _ in range(3):
         doc.add_paragraph()
 
-    _cover_centered(doc, "Submitted by:", italic=True, size=12, color=COLOR_GREY,
-                    space_after=4)
-    _cover_centered(doc, cfg.student.full_name, bold=True, size=SIZE_COVER_NAME,
+    _cover_centered(doc, "Submitted by:",
+                    italic=True, size=12, color=COLOR_GREY, space_after=4)
+    _cover_centered(doc, cfg.student.full_name,
+                    bold=True, size=SIZE_COVER_NAME,
                     color=COLOR_PRIMARY, space_after=2)
-    _cover_centered(doc, f"Roll No. {cfg.student.roll_number}", bold=True, size=14,
-                    color=COLOR_SECONDARY, space_after=2)
+    _cover_centered(doc, f"Roll No. {cfg.student.roll_number}",
+                    size=12, color=COLOR_GREY, space_after=2)
     _cover_centered(doc, f"{cfg.student.semester} Semester  |  {cfg.student.program}",
-                    size=12, color=COLOR_GREY, space_after=4)
+                    size=11, color=COLOR_GREY, space_after=4)
 
     for _ in range(2):
         doc.add_paragraph()
 
-    _cover_centered(doc, "Submitted to:", italic=True, size=12, color=COLOR_GREY,
-                    space_after=4)
-    _cover_centered(doc, cfg.professor.name, bold=True, size=14,
-                    color=COLOR_PRIMARY, space_after=2)
-    _cover_centered(doc, cfg.professor.title,
-                    size=12, color=COLOR_GREY, space_after=4)
+    _cover_centered(doc, "Submitted to:",
+                    italic=True, size=12, color=COLOR_GREY, space_after=4)
+    _cover_centered(doc, cfg.professor.name,
+                    bold=True, size=13, color=COLOR_PRIMARY, space_after=2)
+
+    # Split professor.title on the LAST comma so the trailing institution name
+    # becomes its own line. If no comma, the whole title goes on one line.
+    title = cfg.professor.title
+    if ", " in title:
+        title_line_1, title_line_2 = title.rsplit(", ", 1)
+    else:
+        title_line_1, title_line_2 = title, ""
+    _cover_centered(doc, title_line_1,
+                    size=11, color=COLOR_GREY, space_after=2)
+    if title_line_2:
+        _cover_centered(doc, title_line_2,
+                        size=11, color=COLOR_GREY, space_after=4)
 
     for _ in range(3):
         doc.add_paragraph()
 
     _cover_centered(doc, "Signature:  ____________________",
-                    size=12, color=COLOR_GREY, space_after=2)
+                    size=11, color=COLOR_GREY, space_after=4)
+    _cover_centered(doc, "Date:  ____________________",
+                    size=11, color=COLOR_GREY, space_after=2)
 
     doc.add_page_break()
 
