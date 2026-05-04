@@ -561,6 +561,72 @@ def add_lab(doc, n, lab, *, is_first=False):
     _add_body(doc, lab["observations"])
 
 
+def add_conclusion(doc, cfg):
+    """Closing Conclusion page. Heading 1 'Conclusion' (joins the ToC) +
+    five justified paragraphs synthesising the work across the nine labs.
+    """
+    s = cfg.student
+
+    h = doc.add_paragraph(style="Heading 1")
+    h.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    h.add_run("Conclusion")
+    _para_spacing(h, space_before=0, space_after=8, line=1.2,
+                  page_break_before=True)
+
+    paragraphs = [
+        (
+            "Across the nine labs in this report, I worked through the practical "
+            "building blocks of a typical AWS deployment, starting from the "
+            "network layer at the bottom and finishing with managed services and "
+            "infrastructure as code at the top. The labs were small enough to "
+            "finish in a single session, but together they cover most of what a "
+            "real cloud workload would touch."
+        ),
+        (
+            "Labs 1 and 4 covered the network foundation — a VPC with public and "
+            "private subnets, an internet gateway, route tables, and tiered "
+            "security groups. The most useful idea here was that everything else "
+            "in AWS sits on top of this network, so getting the routing and "
+            "security boundaries right makes every later step easier."
+        ),
+        (
+            "Labs 2, 3, and 5 covered compute and traffic delivery — an EC2 "
+            "instance with a startup script, S3 hosting a static website without "
+            "any server, and an Application Load Balancer in front of an Auto "
+            "Scaling Group across two availability zones. Watching the ALB "
+            "alternate between backend instances on each refresh made the "
+            "horizontal-scaling story click in a way that reading about it never "
+            "did."
+        ),
+        (
+            "Lab 6 covered identity and access — IAM users, groups, and managed "
+            "policies — and made the difference between assigning permissions "
+            "through a group and attaching them directly to a user concrete. "
+            "Group-based permissioning is what scales in practice, and the "
+            "console makes it obvious why."
+        ),
+        (
+            f"Labs 7, 8, and 9 covered the higher-level managed services and "
+            f"infrastructure as code: a Lambda function writing into a DynamoDB "
+            f"table on each invocation, a Fargate task running an Nginx container "
+            f"without any EC2 host to manage, an SNS topic fanning out a single "
+            f"publish to both an SQS queue and an email subscriber, and finally a "
+            f"CloudFormation stack creating a VPC and an S3 bucket from a single "
+            f"YAML file. Beyond the AWS services themselves, the labs gave me "
+            f"practical experience with the AWS Management Console, the AWS CLI, "
+            f"basic shell user-data scripts, and the discipline of capturing "
+            f"evidence at each step — habits that will carry over into any cloud "
+            f"work I do after this {s.semester} semester."
+        ),
+    ]
+    for txt in paragraphs:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        _para_spacing(p, space_before=0, space_after=8, line=1.3)
+        r = p.add_run(txt)
+        _set_run(r, size=SIZE_BODY)
+
+
 # ---------------------------------------------------------------------------
 # Lab content (functions of cfg)
 # ---------------------------------------------------------------------------
@@ -1234,6 +1300,8 @@ def build():
 
     for i, lab in enumerate(labs, 1):
         add_lab(doc, i, lab, is_first=(i == 1))
+
+    add_conclusion(doc, cfg)
 
     _enable_update_fields_on_open(doc)
     out = output_path(cfg)
