@@ -422,11 +422,15 @@ def add_toc(doc, labs):
 # ---------------------------------------------------------------------------
 
 def _add_h1(doc, text, *, keep_with_next=True):
-    p = doc.add_paragraph()
+    """Per-lab section heading using Word Heading 2 style.
+
+    Named _add_h1 for historical reasons; visually these are H2 because
+    the lab title itself is H1.
+    """
+    p = doc.add_paragraph(style="Heading 2")
     _para_spacing(p, space_before=10, space_after=4, line=1.2,
                   keep_with_next=keep_with_next)
-    r = p.add_run(text)
-    _set_run(r, bold=True, size=SIZE_H1, color=COLOR_PRIMARY)
+    p.add_run(text)
     return p
 
 
@@ -533,7 +537,7 @@ def add_lab(doc, n, lab, *, is_first=False):
     for path, caption in lab["screenshots"]:
         _add_screenshot(doc, SHOTS / path, caption)
 
-    _add_h1(doc, "Observations & Results")
+    _add_h1(doc, "Observations and Results")
     _add_body(doc, lab["observations"])
 
 
