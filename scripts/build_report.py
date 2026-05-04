@@ -111,6 +111,20 @@ def _add_page_field(run):
     run._r.append(fld_end)
 
 
+def _add_pages_field(run):
+    """Insert {NUMPAGES} field into a run for live total page count."""
+    fld_begin = OxmlElement("w:fldChar")
+    fld_begin.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = "NUMPAGES"
+    fld_end = OxmlElement("w:fldChar")
+    fld_end.set(qn("w:fldCharType"), "end")
+    run._r.append(fld_begin)
+    run._r.append(instr)
+    run._r.append(fld_end)
+
+
 def configure_heading_styles(doc):
     """Configure Word's native Heading 1 / Heading 2 styles to match the
     polished reference (navy bold, sized for an academic doc).
@@ -166,11 +180,20 @@ def configure_sections(doc, cfg):
     footer = section.footer
     f_para = footer.paragraphs[0]
     f_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
     label = f_para.add_run("Page ")
     _set_run(label, size=10, color=COLOR_GREY)
+
     page_run = f_para.add_run()
     _set_run(page_run, size=10, color=COLOR_GREY)
     _add_page_field(page_run)
+
+    of_run = f_para.add_run(" of ")
+    _set_run(of_run, size=10, color=COLOR_GREY)
+
+    pages_run = f_para.add_run()
+    _set_run(pages_run, size=10, color=COLOR_GREY)
+    _add_pages_field(pages_run)
 
 
 def configure_default_styles(doc):
