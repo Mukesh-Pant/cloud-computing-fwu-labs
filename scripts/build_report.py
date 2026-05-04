@@ -510,12 +510,11 @@ def _add_screenshot(doc, image_path, caption):
 
 
 def add_lab(doc, n, lab, *, is_first=False):
-    title_p = doc.add_paragraph()
+    title_p = doc.add_paragraph(style="Heading 1")
     _para_spacing(title_p, space_before=0, space_after=8, line=1.2,
                   keep_with_next=True,
                   page_break_before=not is_first)
-    tr = title_p.add_run(f"Lab {n}: {lab['title']}")
-    _set_run(tr, bold=True, size=SIZE_LAB_TITLE, color=COLOR_PRIMARY)
+    title_p.add_run(f"Lab {n}: {lab['title']}")
     _add_horizontal_rule(title_p, color=COLOR_PRIMARY, size=12)
 
     _add_h1(doc, "Objective")
