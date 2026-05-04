@@ -468,14 +468,28 @@ def _add_bullet(doc, text):
         _set_run(r, size=SIZE_BODY)
 
 
+def _set_cell_borders(cell, color="BFBFBF", size="4"):
+    """Add a single 1pt light-grey border around a table cell on all four sides."""
+    tc_pr = cell._tc.get_or_add_tcPr()
+    borders = tc_pr.find(qn("w:tcBorders"))
+    if borders is None:
+        borders = OxmlElement("w:tcBorders")
+        tc_pr.append(borders)
+    for edge in ("top", "left", "bottom", "right"):
+        b = OxmlElement(f"w:{edge}")
+        b.set(qn("w:val"), "single")
+        b.set(qn("w:sz"), str(size))
+        b.set(qn("w:space"), "0")
+        b.set(qn("w:color"), color)
+        borders.append(b)
+
+
 def _add_services_table(doc, services):
+    """Render services as a clean 2-column bordered grid (no bullets)."""
     n = len(services)
     rows = (n + 1) // 2
     table = doc.add_table(rows=rows, cols=2)
     table.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    table.autofit = False
-    for col in table.columns:
-        col.width = Inches(3.2)
 
     for idx, svc in enumerate(services):
         r, c = divmod(idx, 2)
@@ -484,10 +498,15 @@ def _add_services_table(doc, services):
         cell.text = ""
         para = cell.paragraphs[0]
         _para_spacing(para, space_before=2, space_after=2, line=1.15)
-        run_b = para.add_run("•  ")
-        _set_run(run_b, bold=True, size=SIZE_BODY, color=COLOR_SECONDARY)
-        run_t = para.add_run(svc)
-        _set_run(run_t, size=SIZE_BODY)
+        run = para.add_run(svc)
+        _set_run(run, size=SIZE_BODY)
+        _set_cell_borders(cell)
+
+    # Give the trailing empty cell a border too if services count is odd
+    if n % 2 == 1:
+        empty_cell = table.cell(rows - 1, 1)
+        _set_cell_borders(empty_cell)
+
     after = doc.add_paragraph()
     _para_spacing(after, space_before=0, space_after=4, line=1.0)
 
