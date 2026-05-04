@@ -354,26 +354,67 @@ def add_acknowledgement(doc, cfg):
     doc.add_page_break()
 
 
+def _add_toc_field(paragraph, instr=r'TOC \o "1-1" \h \z \u'):
+    """Emit a Word TOC field that builds a ToC from Heading 1 entries."""
+    run = paragraph.add_run()
+    fld_begin = OxmlElement("w:fldChar")
+    fld_begin.set(qn("w:fldCharType"), "begin")
+    fld_begin.set(qn("w:dirty"), "true")
+    run._r.append(fld_begin)
+
+    instr_el = OxmlElement("w:instrText")
+    instr_el.set(qn("xml:space"), "preserve")
+    instr_el.text = instr
+    run._r.append(instr_el)
+
+    fld_sep = OxmlElement("w:fldChar")
+    fld_sep.set(qn("w:fldCharType"), "separate")
+    run._r.append(fld_sep)
+
+    placeholder = paragraph.add_run(
+        "Right-click and select \"Update Field\" to populate."
+    )
+    _set_run(placeholder, italic=True, size=10, color=COLOR_GREY)
+
+    fld_end = OxmlElement("w:fldChar")
+    fld_end.set(qn("w:fldCharType"), "end")
+    placeholder._r.append(fld_end)
+
+
+def _enable_update_fields_on_open(doc):
+    """Set w:updateFields in settings.xml so Word refreshes fields on open."""
+    settings = doc.settings.element
+    existing = settings.find(qn("w:updateFields"))
+    if existing is None:
+        update = OxmlElement("w:updateFields")
+        update.set(qn("w:val"), "true")
+        settings.append(update)
+    else:
+        existing.set(qn("w:val"), "true")
+
+
 # ---------------------------------------------------------------------------
 # Table of contents
 # ---------------------------------------------------------------------------
 
 def add_toc(doc, labs):
+    """Add a centered TABLE OF CONTENTS heading and a Word TOC field.
+
+    The `labs` argument is unused (field reads from document heading structure)
+    but kept for call-site compatibility.
+    """
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _para_spacing(p, space_before=4, space_after=8, keep_with_next=True)
     r = p.add_run("TABLE OF CONTENTS")
-    _set_run(r, bold=True, size=20, color=COLOR_PRIMARY)
+    _set_run(r, bold=True, size=18, color=COLOR_PRIMARY)
     _add_horizontal_rule(p, color=COLOR_PRIMARY, size=8)
-    doc.add_paragraph()
 
-    for i, lab in enumerate(labs, 1):
-        para = doc.add_paragraph()
-        _para_spacing(para, space_before=2, space_after=4, line=1.2)
-        run_n = para.add_run(f"Lab {i}.   ")
-        _set_run(run_n, bold=True, size=SIZE_TOC_ENTRY, color=COLOR_PRIMARY)
-        run_t = para.add_run(lab["title"])
-        _set_run(run_t, size=SIZE_TOC_ENTRY, color=COLOR_GREY)
+    toc_para = doc.add_paragraph()
+    _para_spacing(toc_para, space_before=4, space_after=8, line=1.2)
+    _add_toc_field(toc_para)
+
+    doc.add_page_break()
 
 
 # ---------------------------------------------------------------------------
@@ -1171,6 +1212,7 @@ def build():
     for i, lab in enumerate(labs, 1):
         add_lab(doc, i, lab, is_first=(i == 1))
 
+    _enable_update_fields_on_open(doc)
     out = output_path(cfg)
     out.parent.mkdir(parents=True, exist_ok=True)
     doc.save(out)
