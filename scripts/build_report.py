@@ -511,7 +511,7 @@ def _add_screenshot(doc, image_path, caption):
     _para_spacing(cap, space_before=0, space_after=8, line=1.15,
                   keep_together=True)
     cr = cap.add_run(caption)
-    _set_run(cr, italic=True, size=SIZE_CAPTION, color=COLOR_GREY)
+    _set_run(cr, bold=True, italic=True, size=SIZE_CAPTION, color=COLOR_GREY)
 
 
 def add_lab(doc, n, lab, *, is_first=False):
