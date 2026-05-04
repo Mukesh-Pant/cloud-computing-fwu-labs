@@ -435,11 +435,12 @@ def _add_h1(doc, text, *, keep_with_next=True):
 
 
 def _add_h3(doc, text, *, keep_with_next=True):
+    """Step sub-heading inside a lab procedure. Plain black bold 12pt."""
     p = doc.add_paragraph()
     _para_spacing(p, space_before=6, space_after=2, line=1.2,
                   keep_with_next=keep_with_next)
     r = p.add_run(text)
-    _set_run(r, bold=True, size=SIZE_H3, color=COLOR_SECONDARY)
+    _set_run(r, bold=True, size=SIZE_H3)
     return p
 
 
