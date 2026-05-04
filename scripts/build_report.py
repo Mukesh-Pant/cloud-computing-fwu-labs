@@ -292,6 +292,68 @@ def add_cover_page(doc, cfg):
     doc.add_page_break()
 
 
+def add_acknowledgement(doc, cfg):
+    """Acknowledgement page: Heading 1 'ACKNOWLEDGEMENT', three justified body
+    paragraphs, signed at the bottom right with name, roll, and program.
+    """
+    s = cfg.student
+    inst = cfg.institution
+    prof = cfg.professor
+
+    h = doc.add_paragraph(style="Heading 1")
+    h.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    h.add_run("ACKNOWLEDGEMENT")
+
+    paragraphs = [
+        (
+            f"I would like to express my sincere gratitude to my subject teacher, "
+            f"{prof.name}, for guiding me throughout the {cfg.subject.name} "
+            f"laboratory work and for the patient explanations of cloud concepts "
+            f"that helped me understand the material well beyond what a textbook "
+            f"alone could offer."
+        ),
+        (
+            f"I am also thankful to the {inst.faculty} and the {inst.school} at "
+            f"{inst.university} for providing the lab environment and the "
+            f"opportunity to complete the practical exercises that make up this "
+            f"report."
+        ),
+        (
+            f"Finally, I would like to thank my classmates of {s.semester} semester "
+            f"{s.program} for the discussions and the willingness to compare notes "
+            f"while working through the AWS console — those small conversations "
+            f"often saved hours of confusion."
+        ),
+    ]
+    for txt in paragraphs:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        _para_spacing(p, space_before=0, space_after=8, line=1.3)
+        r = p.add_run(txt)
+        _set_run(r, size=SIZE_BODY)
+
+    # Signed block, right-aligned
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _para_spacing(p, space_before=14, space_after=2, line=1.2)
+    r = p.add_run(s.full_name)
+    _set_run(r, bold=True, size=12, color=COLOR_PRIMARY)
+
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _para_spacing(p, space_before=0, space_after=2, line=1.2)
+    r = p.add_run(f"Roll No. {s.roll_number}")
+    _set_run(r, size=11, color=COLOR_GREY)
+
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _para_spacing(p, space_before=0, space_after=2, line=1.2)
+    r = p.add_run(f"{s.program}, {s.semester} Semester")
+    _set_run(r, size=11, color=COLOR_GREY)
+
+    doc.add_page_break()
+
+
 # ---------------------------------------------------------------------------
 # Table of contents
 # ---------------------------------------------------------------------------
@@ -1102,6 +1164,7 @@ def build():
     configure_sections(doc, cfg)
 
     add_cover_page(doc, cfg)
+    add_acknowledgement(doc, cfg)
     labs = get_labs(cfg)
     add_toc(doc, labs)
 
