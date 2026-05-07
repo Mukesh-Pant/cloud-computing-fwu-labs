@@ -33,8 +33,8 @@ COLOR_SECONDARY = RGBColor(0x2E, 0x74, 0xB5) # mid blue (Heading 3, accents)
 COLOR_GREY = RGBColor(0x59, 0x59, 0x59)      # captions, sub-text
 COLOR_RULE = RGBColor(0xBF, 0xBF, 0xBF)      # horizontal rule under lab titles
 
-FONT_BODY = "Calibri"
-FONT_HEADING = "Calibri"
+FONT_BODY = "Times New Roman"
+FONT_HEADING = "Times New Roman"
 
 SIZE_BODY = 11
 SIZE_LAB_TITLE = 22
@@ -219,7 +219,7 @@ def _cover_centered(doc, text, *, bold=False, italic=False, size=None, color=Non
 
 
 def add_cover_page(doc, cfg):
-    for _ in range(2):
+    for _ in range(1):
         doc.add_paragraph()
 
     _cover_centered(doc, cfg.institution.university.upper(),
@@ -233,7 +233,7 @@ def add_cover_page(doc, cfg):
                     italic=True, size=11, color=COLOR_GREY)
     _add_horizontal_rule(p_school, color=COLOR_PRIMARY, size=12)
 
-    for _ in range(3):
+    for _ in range(2):
         doc.add_paragraph()
 
     _cover_centered(doc, "A LAB REPORT",
@@ -247,7 +247,7 @@ def add_cover_page(doc, cfg):
                     italic=True, size=12, color=COLOR_GREY, space_after=4)
     _add_horizontal_rule(p_title, color=COLOR_PRIMARY, size=8)
 
-    for _ in range(3):
+    for _ in range(2):
         doc.add_paragraph()
 
     _cover_centered(doc, "Submitted by:",
@@ -260,7 +260,7 @@ def add_cover_page(doc, cfg):
     _cover_centered(doc, f"{cfg.student.semester} Semester  |  {cfg.student.program}",
                     size=11, color=COLOR_GREY, space_after=4)
 
-    for _ in range(2):
+    for _ in range(1):
         doc.add_paragraph()
 
     _cover_centered(doc, "Submitted to:",
@@ -281,7 +281,7 @@ def add_cover_page(doc, cfg):
         _cover_centered(doc, title_line_2,
                         size=11, color=COLOR_GREY, space_after=4)
 
-    for _ in range(3):
+    for _ in range(1):
         doc.add_paragraph()
 
     _cover_centered(doc, "Signature:  ____________________",

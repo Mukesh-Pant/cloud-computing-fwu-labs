@@ -36,7 +36,3 @@ Thumbs.db
 
 # Local report drafts (we keep the final committed)
 report/*.tmp.docx
-
-# Classmate reference reports (not ours to publish)
-AWS_Lab_Report_Complete.docx
-cloud_computing_practical-report_file.docx
